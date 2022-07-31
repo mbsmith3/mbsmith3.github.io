@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2016 Presidential Campaign Spending</title>
+    <script src='https://d3js.org/d3.v7.min.js'></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script> -->
+	<!-- Data derived from https://public.tableau.com/s/sites/default/files/media/2016_presidential_candidate_expenditures.csv -->
+    <style>
+        rect {fill: rgb(13, 53, 187); stroke: black;}
+        html, body, #vis {
+            height: 90%;
+            margin: 30px 30px 30px;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+<h1>2016 Cumulative Campaign Spending</h1>
+<h2>Thru the first 15 months of the campaign</h2>
+<label for="month_choice">Select a month:</label>
+<input type="range" min=1 max=15 step=1 id="month_choice" oninput="selected_month.value = d3.scaleOrdinal().domain([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]).range(['Jan 2015','Feb 2015','Mar 2015','Apr 2015','May 2015','Jun 2015','Jul 2015','Aug 2015','Sep 2015','Oct 2015','Nov 2015','Dec 2015','Jan 2016','Feb 2016','Mar 2016'])(parseInt(month_choice.value))">
+<output name="selected_month" id="selected_month">Aug 2015</output>
+<div id="vis"></div>
+<script>
+
+// Credit to https://bl.ocks.org/martinjc/f621fbc6a5b795bf01f4c0be0bee5093 for this tidy way of setting the dimensions and margins for the canvas
+var width = document.getElementById('vis').clientWidth;
+var height = document.getElementById('vis').clientHeight;
+var margin = {
+    top: 10,
+    bottom: 100,
+    left: 100,
+    right: 120
+};
+var svg = d3.select('#vis')
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+var tooltip = d3.select('body')
+    .append('div')
+    .attr('class', 'tooltip');
+width = width - margin.left - margin.right;
+height = height - margin.top - margin.bottom;
+
+// Create x scales and x axis
+names = ["Bush","Carson","Christie","Clinton","Cruz","Graham","Kasich","Paul","Perry","Rubio","Sanders","Trump","Walker"];
+var x_scale = d3.scaleBand().domain(names).range([0, width]).paddingInner(0.2).paddingOuter(0.1);
+var pos_x = d3.scaleBand().domain([0,1,2,3,4,5,6,7,8,9,10,11,12]).range([0, width]).paddingInner(0.2).paddingOuter(0.1);
+
+
+var mydata = [
+  {
+    "Bush": 0,
+    "Carson": 0,
+    "Christie": 0,
+    "Clinton": 41059,
+    "Cruz": 0,
+    "Graham": 25655,
+    "Kasich": 1345,
+    "Paul": 0,
+    "Perry": 0,
+    "Rubio": 0,
+    "Sanders": 0,
+    "Trump": 0,
+    "Walker": 0
+  },
+  {
+    "Bush": 0,
+    "Carson": 0,
+    "Christie": 0,
+    "Clinton": 79766,
+    "Cruz": 0,
+    "Graham": 65541,
+    "Kasich": 1345,
+    "Paul": 0,
+    "Perry": 0,
+    "Rubio": 0,
+    "Sanders": 0,
+    "Trump": 0,
+    "Walker": 0
+  },
+  {
+    "Bush": 0,
+    "Carson": 479784,
+    "Christie": 0,
+    "Clinton": 173066,
+    "Cruz": 371513,
+    "Graham": 232250,
+    "Kasich": 1998,
+    "Paul": 0,
+    "Perry": 0,
+    "Rubio": 0,
+    "Sanders": 0,
+    "Trump": 0,
+    "Walker": 0
+  },
+  {
+    "Bush": 0,
+    "Carson": 1982475,
+    "Christie": 0,
+    "Clinton": 3162624,
+    "Cruz": 2232790,
+    "Graham": 352738,
+    "Kasich": 1998,
+    "Paul": 1231193,
+    "Perry": 0,
+    "Rubio": 383997,
+    "Sanders": 40762,
+    "Trump": 197738,
+    "Walker": 0
+  },
+  {
+    "Bush": 0,
+    "Carson": 3783086,
+    "Christie": 0,
+    "Clinton": 9749687,
+    "Cruz": 4201972,
+    "Graham": 672312,
+    "Kasich": 1998,
+    "Paul": 2048059,
+    "Perry": 22769,
+    "Rubio": 766129,
+    "Sanders": 1445382,
+    "Trump": 556453,
+    "Walker": 0
+  },
+  {
+    "Bush": 3061193,
+    "Carson": 5878353,
+    "Christie": 0,
+    "Clinton": 18526354,
+    "Cruz": 5751337,
+    "Graham": 1107550,
+    "Kasich": 1998,
+    "Paul": 2730182,
+    "Perry": 786326,
+    "Rubio": 2218620,
+    "Sanders": 2945630,
+    "Trump": 1427252,
+    "Walker": 321345
+  },
+  {
+    "Bush": 7664721,
+    "Carson": 9566993,
+    "Christie": 1282494,
+    "Clinton": 27562626,
+    "Cruz": 8740202,
+    "Graham": 1961034,
+    "Kasich": 167899,
+    "Paul": 5646195,
+    "Perry": 1631430,
+    "Rubio": 4529312,
+    "Sanders": 7245357,
+    "Trump": 2159016,
+    "Walker": 3085555
+  },
+  {
+    "Bush": 12016224,
+    "Carson": 13251788,
+    "Christie": 2076400,
+    "Clinton": 36442943,
+    "Cruz": 11182282,
+    "Graham": 2574526,
+    "Kasich": 1024005,
+    "Paul": 6621576,
+    "Perry": 1874329,
+    "Rubio": 5599395,
+    "Sanders": 10864452,
+    "Trump": 3973661,
+    "Walker": 6961416
+  },
+  {
+    "Bush": 14493015,
+    "Carson": 20037820,
+    "Christie": 2801692,
+    "Clinton": 44201450,
+    "Cruz": 12593862,
+    "Graham": 3078011,
+    "Kasich": 1750875,
+    "Paul": 7222969,
+    "Perry": 1973901,
+    "Rubio": 6641483,
+    "Sanders": 14088109,
+    "Trump": 5781983,
+    "Walker": 8967143
+  },
+  {
+    "Bush": 18767350,
+    "Carson": 29540891,
+    "Christie": 3973273,
+    "Clinton": 57123260,
+    "Cruz": 18047673,
+    "Graham": 3741793,
+    "Kasich": 3028424,
+    "Paul": 8963305,
+    "Perry": 1975386,
+    "Rubio": 9595978,
+    "Sanders": 23111667,
+    "Trump": 7425582,
+    "Walker": 9571509
+  },
+  {
+    "Bush": 22084116,
+    "Carson": 40393511,
+    "Christie": 4861913,
+    "Clinton": 67346349,
+    "Cruz": 23067906,
+    "Graham": 4513749,
+    "Kasich": 4164564,
+    "Paul": 9737341,
+    "Perry": 1977189,
+    "Rubio": 14237167,
+    "Sanders": 33749217,
+    "Trump": 10004383,
+    "Walker": 9743935
+  },
+  {
+    "Bush": 24216359,
+    "Carson": 47117217,
+    "Christie": 5965585,
+    "Clinton": 77294222,
+    "Cruz": 28018738,
+    "Graham": 5049833,
+    "Kasich": 5002544,
+    "Paul": 10118146,
+    "Perry": 2016483,
+    "Rubio": 21313621,
+    "Sanders": 46014045,
+    "Trump": 13047654,
+    "Walker": 10007379
+  },
+  {
+    "Bush": 30469202,
+    "Carson": 53272254,
+    "Christie": 7135343,
+    "Clinton": 97287650,
+    "Cruz": 40620084,
+    "Graham": 5223488,
+    "Kasich": 7116368,
+    "Paul": 11164024,
+    "Perry": 2016676,
+    "Rubio": 31549989,
+    "Sanders": 80722367,
+    "Trump": 25093376,
+    "Walker": 10172899
+  },
+  {
+    "Bush": 33539578,
+    "Carson": 58228603,
+    "Christie": 7998630,
+    "Clinton": 128406787,
+    "Cruz": 58087123,
+    "Graham": 5277644,
+    "Kasich": 10703155,
+    "Paul": 11624676,
+    "Perry": 2016871,
+    "Rubio": 40591034,
+    "Sanders": 120978713,
+    "Trump": 35342401,
+    "Walker": 10300340
+  },
+  {
+    "Bush": 34494395,
+    "Carson": 60130941,
+    "Christie": 8158566,
+    "Clinton": 155479372,
+    "Cruz": 69672240,
+    "Graham": 5329162,
+    "Kasich": 15199786,
+    "Paul": 11695255,
+    "Perry": 2017068,
+    "Rubio": 44832612,
+    "Sanders": 165856133,
+    "Trump": 49194165,
+    "Walker": 10472809
+  }
+];
+
+draw_month("8");
+// This function is derived from a similar feature from https://bl.ocks.org/martinjc/f621fbc6a5b795bf01f4c0be0bee5093
+function draw_month(month) {
+    // Delete axes, create y scale, re-draw axes
+    data_arr = Object.values(mydata.filter(function(d,i) {return i+1 == parseInt(month);})[0]);
+    max_val = Math.max(...data_arr);
+    y_top = d3.scaleOrdinal().domain([41059, 79766,479784,3162624,9749687,18526354,27562626,36442943,44201450,57123260,67346349,77294222,97287650,128406787,165856133]).range([100000,100000,600000,20000000,20000000,20000000,75000000,75000000,75000000,170000000,170000000,170000000,170000000,170000000,170000000])(max_val);
+    svg.selectAll("g").remove();
+    var y_scale = d3.scaleLinear().domain([0, y_top]).range([height, 0]);
+    svg.append("g").attr("transform","translate(0,"+height+")").call(d3.axisBottom().scale(x_scale));
+    svg.append("g").call(d3.axisLeft().scale(y_scale));
+    svg.selectAll("rect").remove();
+    var bars = svg.selectAll('.bar').data(data_arr);
+    bars.enter().append('rect').attr('class', 'bar')
+        .attr('x', function(d, i) {return pos_x(i);})
+        .attr('y', function(d, i) {return y_scale(d);})
+        .attr('width', pos_x.bandwidth())
+        .attr('opacity', 0.3)
+        .attr('height', function(d, i) {return height-y_scale(d);})
+        .on('mouseover', mouseOver)
+        .on('mouseout', mouseOut);
+	
+	function mouseOver(d) {
+        d3.select(this).transition().style('opacity', 1);
+    };
+	function mouseOut(d) {
+        d3.select(this).transition().style('opacity', 0.3)
+    };
+
+    var parameter_selector = d3.select('#month_choice');
+    parameter_selector.on('change', function() {
+        draw_month(this.value);
+    });
+};
+
+</script>
+
+</body>
+</html>
